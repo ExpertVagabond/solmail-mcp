@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: solmail-mcp-http
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: node dist/http-server.js
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: SOLMAIL_API_URL
+        value: https://solmail.online/api
+      - key: MERCHANT_WALLET
+        value: B5daxcMG9LgcXkZwuxBhHtuYxzG9J4ekgz1wUiMXw3xp
