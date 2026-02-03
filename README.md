@@ -4,6 +4,11 @@
 
 SolMail MCP is a Model Context Protocol (MCP) server that enables AI agents like Claude to send physical letters and postcards to real addresses worldwide, paid for with Solana (SOL) cryptocurrency. Perfect for agents that need to interact with the physical world.
 
+> **🏆 Built for Colosseum Agent Hackathon**
+> **✅ Production-Ready** - Switch from test mode to production with simple config changes
+> **🧪 Demo Mode** - Test with devnet SOL and Lob test API (no real charges)
+> **🚀 Production Mode** - Real mail delivery with mainnet SOL
+
 ## Features
 
 - 📬 **Send Real Mail**: Physical letters printed and mailed to any address
@@ -301,12 +306,69 @@ npm start
 4. **Rate Limiting**: Implement spending limits for autonomous agents
 5. **Content Review**: Consider reviewing mail content before sending (for production)
 
+## Production Deployment
+
+### Switching from Test to Production
+
+The hackathon demo uses **test mode** (no real mail sent). To send **real mail**:
+
+#### 1. Get Live Lob API Key
+- Sign up at https://dashboard.lob.com
+- Complete identity verification
+- Get your **live** API key (starts with `live_`)
+
+#### 2. Update Configuration
+
+**Test Mode (Current)**:
+```bash
+SOLMAIL_API_URL=https://solmail.online/api
+SOLANA_NETWORK=devnet
+LOB_API_KEY=test_...
+```
+
+**Production Mode**:
+```bash
+SOLMAIL_API_URL=https://solmail.online/api
+SOLANA_NETWORK=mainnet-beta
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+LOB_API_KEY=live_YOUR_KEY_HERE
+```
+
+#### 3. Fund Wallet with Real SOL
+
+- Create mainnet wallet: `solana-keygen new --outfile mainnet-wallet.json`
+- Send SOL to wallet address
+- Cost: ~0.011 SOL per letter (~$1.50 at $138/SOL)
+
+#### 4. Test & Deploy
+
+```bash
+# Test locally with production config
+npm run dev
+
+# Deploy to production
+vercel --prod
+```
+
+**⚠️ Important**: Production mode sends **real mail** and charges **real SOL**. Test thoroughly on devnet first!
+
+### Hybrid Testing (Recommended)
+
+Test real mail delivery **without spending real SOL**:
+```bash
+LOB_API_KEY=live_YOUR_KEY  # Real mail
+SOLANA_NETWORK=devnet       # Free SOL
+```
+
+This verifies mail delivery works before switching to mainnet!
+
 ## Limitations
 
 - Currently supports plain text letters only (PDF support coming soon)
 - Requires wallet with SOL balance
 - Subject to postal delivery times (not instant)
 - Mail content reviewed by fulfillment partner (Lob.com) for policy compliance
+- Production mode requires Lob account verification (1-2 business days)
 
 ## Roadmap
 
