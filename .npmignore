@@ -1,0 +1,25 @@
+# Source files (only ship dist/)
+src/
+tsconfig.json
+*.ts
+!*.d.ts
+
+# Development files
+.env
+.env.example
+node_modules/
+*.log
+.DS_Store
+
+# Documentation (keep README.md)
+HACKATHON_CREDENTIALS.md
+HACKATHON.md
+DEMO_SCRIPT.md
+TEST_RESULTS.md
+TESTING.md
+CONTRIBUTING.md
+GITHUB_SETUP.md
+
+# Git
+.git/
+.gitignore
