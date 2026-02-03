@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SolMail MCP - Pricing & API Keys</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+            font-size: 48px;
+            font-weight: 700;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        .pricing-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+        }
+        .pricing-card.featured {
+            border: 3px solid #667eea;
+            transform: scale(1.05);
+        }
+        .badge {
+            position: absolute;
+            top: -15px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .tier-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .price {
+            font-size: 48px;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .price-period {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        .feature-list {
+            list-style: none;
+            margin: 30px 0;
+        }
+        .feature-list li {
+            padding: 12px 0;
+            color: #555;
+            border-bottom: 1px solid #eee;
+            position: relative;
+            padding-left: 30px;
+        }
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .cta-button {
+            width: 100%;
+            padding: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .cta-button:hover {
+            background: #5568d3;
+        }
+        .cta-button.secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .cta-button.secondary:hover {
+            background: #e0e0e0;
+        }
+        .api-key-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 40px;
+        }
+        .api-key-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .api-key-box {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 20px 0;
+            border: 2px dashed #ddd;
+        }
+        .copy-button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .usage-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .stat-card {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SolMail MCP Pricing</h1>
+
+        <div class="pricing-grid">
+            <!-- Free Tier -->
+            <div class="pricing-card">
+                <div class="tier-name">Free</div>
+                <div class="price">$0</div>
+                <div class="price-period">forever</div>
+                <ul class="feature-list">
+                    <li>5 letters per month</li>
+                    <li>Devnet testing</li>
+                    <li>Basic support</li>
+                    <li>US & International mail</li>
+                    <li>Community access</li>
+                </ul>
+                <button class="cta-button secondary" onclick="selectPlan('free')">Start Free</button>
+            </div>
+
+            <!-- Pro Tier -->
+            <div class="pricing-card featured">
+                <div class="badge">MOST POPULAR</div>
+                <div class="tier-name">Pro</div>
+                <div class="price">$15</div>
+                <div class="price-period">per month</div>
+                <ul class="feature-list">
+                    <li>100 letters per month</li>
+                    <li>Mainnet production ready</li>
+                    <li>Priority support</li>
+                    <li>US & International mail</li>
+                    <li>Color printing included</li>
+                    <li>API analytics dashboard</li>
+                </ul>
+                <button class="cta-button" onclick="selectPlan('pro')">Subscribe to Pro</button>
+            </div>
+
+            <!-- Enterprise Tier -->
+            <div class="pricing-card">
+                <div class="tier-name">Enterprise</div>
+                <div class="price">$99</div>
+                <div class="price-period">per month</div>
+                <ul class="feature-list">
+                    <li>Unlimited letters</li>
+                    <li>Custom branding</li>
+                    <li>Dedicated support</li>
+                    <li>SLA guarantee</li>
+                    <li>Bulk discounts</li>
+                    <li>White-label option</li>
+                    <li>Custom integrations</li>
+                </ul>
+                <button class="cta-button" onclick="selectPlan('enterprise')">Contact Sales</button>
+            </div>
+        </div>
+
+        <!-- API Key Management -->
+        <div class="api-key-section" id="apiKeySection" style="display: none;">
+            <h2>Your API Key</h2>
+            <p style="color: #666; margin-bottom: 20px;">
+                Use this API key to authenticate your SolMail MCP server. Add it to your environment variables as <code>SOLMAIL_API_KEY</code>.
+            </p>
+
+            <div class="api-key-box" id="apiKeyDisplay">
+                Loading your API key...
+            </div>
+
+            <button class="copy-button" onclick="copyApiKey()">📋 Copy API Key</button>
+
+            <h3 style="margin-top: 40px; margin-bottom: 20px;">Usage This Month</h3>
+            <div class="usage-stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="lettersSent">0</div>
+                    <div class="stat-label">Letters Sent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="lettersRemaining">5</div>
+                    <div class="stat-label">Remaining</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="currentTier">Free</div>
+                    <div class="stat-label">Current Tier</div>
+                </div>
+            </div>
+
+            <button class="cta-button" onclick="manageSubscription()" style="margin-top: 30px;">
+                Manage Subscription
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Stripe (replace with your publishable key)
+        const stripe = Stripe('pk_test_YOUR_PUBLISHABLE_KEY');
+
+        // Price IDs (replace with your actual Stripe price IDs)
+        const PRICE_IDS = {
+            pro: 'price_pro_monthly',
+            enterprise: 'price_enterprise_monthly'
+        };
+
+        function selectPlan(tier) {
+            if (tier === 'free') {
+                // Show API key section for free tier
+                document.getElementById('apiKeySection').style.display = 'block';
+                document.getElementById('apiKeyDisplay').textContent = 'skey_free_' + generateRandomKey();
+                return;
+            }
+
+            if (tier === 'enterprise') {
+                // Contact sales
+                window.location.href = 'mailto:hello@solmail.online?subject=Enterprise Plan Inquiry';
+                return;
+            }
+
+            // Redirect to Stripe Checkout for Pro
+            fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    priceId: PRICE_IDS[tier],
+                    tier: tier
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                return stripe.redirectToCheckout({ sessionId: data.sessionId });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to start checkout. Please try again.');
+            });
+        }
+
+        function copyApiKey() {
+            const apiKey = document.getElementById('apiKeyDisplay').textContent;
+            navigator.clipboard.writeText(apiKey).then(() => {
+                alert('API key copied to clipboard!');
+            });
+        }
+
+        function manageSubscription() {
+            // Redirect to Stripe Customer Portal
+            fetch('/api/create-portal-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                window.location.href = data.url;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to open subscription management. Please try again.');
+            });
+        }
+
+        function generateRandomKey() {
+            return Math.random().toString(36).substring(2, 15) +
+                   Math.random().toString(36).substring(2, 15);
+        }
+
+        // Load user data if logged in
+        function loadUserData() {
+            // Check if user is logged in (you'll implement this)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('success') === 'true') {
+                document.getElementById('apiKeySection').style.display = 'block';
+                // Fetch actual user data from your backend
+            }
+        }
+
+        window.addEventListener('load', loadUserData);
+    </script>
+</body>
+</html>
