@@ -1,95 +1,52 @@
 {
-  "name": "io.github.expertvagabond/solmail",
-  "description": "Send physical mail with Solana cryptocurrency - AI agents can send real letters autonomously to 200+ countries",
-  "repositoryUrl": "https://github.com/ExpertVagabond/solmail-mcp",
-  "license": "MIT",
-  "author": {
-    "name": "SolMail",
-    "email": "hello@solmail.online",
-    "url": "https://solmail.online"
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ExpertVagabond/solmail",
+  "description": "Send physical mail with Solana cryptocurrency - AI agents can send real letters worldwide",
+  "repository": {
+    "url": "https://github.com/ExpertVagabond/solmail-mcp",
+    "source": "github"
   },
-  "sourceCode": {
-    "repository": {
-      "type": "git",
-      "url": "https://github.com/ExpertVagabond/solmail-mcp.git"
-    }
-  },
-  "runtime": {
-    "language": "javascript",
-    "sdk": "@modelcontextprotocol/sdk"
-  },
-  "configuration": {
-    "type": "stdio",
-    "command": "node",
-    "args": ["{{packagePath}}/dist/index.js"],
-    "env": {
-      "SOLANA_PRIVATE_KEY": {
-        "description": "Your agent's Solana wallet private key (base58 or JSON array)",
-        "required": true,
-        "secret": true
-      },
-      "SOLANA_NETWORK": {
-        "description": "Solana network: devnet for testing, mainnet-beta for production",
-        "required": false,
-        "default": "devnet"
-      },
-      "SOLMAIL_API_URL": {
-        "description": "SolMail API endpoint",
-        "required": false,
-        "default": "https://solmail.online/api"
-      },
-      "MERCHANT_WALLET": {
-        "description": "Merchant wallet address for payments",
-        "required": false
-      }
-    }
-  },
-  "install": {
-    "npm": "solmail-mcp"
-  },
-  "categories": ["communication", "blockchain", "autonomous"],
-  "tags": ["mail", "postal", "solana", "crypto", "physical-world", "autonomous", "lob"],
-  "capabilities": {
-    "tools": [
-      {
-        "name": "send_mail",
-        "description": "Send physical mail to any address worldwide using Solana cryptocurrency payment"
-      },
-      {
-        "name": "get_mail_quote",
-        "description": "Get a price quote for sending mail including SOL/USD conversion"
-      },
-      {
-        "name": "get_wallet_balance",
-        "description": "Check the agent's SOL wallet balance"
-      },
-      {
-        "name": "get_wallet_address",
-        "description": "Get the agent's wallet address for funding operations"
-      }
-    ]
-  },
-  "examples": [
+  "version": "1.0.0",
+  "packages": [
     {
-      "title": "Send a thank you letter",
-      "description": "AI agent autonomously sends a physical thank you note",
-      "conversation": [
+      "registryType": "npm",
+      "identifier": "solmail-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
         {
-          "role": "user",
-          "content": "Send a thank you letter to John Doe at 123 Main St, San Francisco, CA 94102"
+          "description": "Your agent's Solana wallet private key (base58 or JSON array format)",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true,
+          "name": "SOLANA_PRIVATE_KEY"
         },
         {
-          "role": "assistant",
-          "content": "I'll send that letter using Solana. Let me get a quote first...",
-          "toolCalls": [
-            {
-              "name": "get_mail_quote",
-              "input": { "country": "US", "color": false }
-            }
-          ]
+          "description": "Solana network: devnet for testing, mainnet-beta for production",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SOLANA_NETWORK",
+          "defaultValue": "devnet"
+        },
+        {
+          "description": "SolMail API endpoint",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SOLMAIL_API_URL",
+          "defaultValue": "https://solmail.online/api"
+        },
+        {
+          "description": "Merchant wallet address for payments",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "MERCHANT_WALLET"
         }
       ]
     }
-  ],
-  "version": "1.0.0"
+  ]
 }

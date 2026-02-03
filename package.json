@@ -30,6 +30,7 @@
   ],
   "author": "SolMail <hello@solmail.online>",
   "license": "MIT",
+  "mcpName": "io.github.ExpertVagabond/solmail",
   "homepage": "https://solmail.online",
   "repository": {
     "type": "git",
