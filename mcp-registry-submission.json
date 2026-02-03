@@ -1,0 +1,63 @@
+{
+  "name": "solmail",
+  "displayName": "SolMail - Send Physical Mail with Crypto",
+  "description": "Send real physical letters and postcards to any address worldwide, paid for with Solana cryptocurrency. Perfect for AI agents that need to interact with the physical world.",
+  "category": "communication",
+  "tags": ["mail", "postal", "solana", "crypto", "physical-world", "autonomous"],
+  "repository": "https://github.com/ExpertVagabond/solmail-mcp",
+  "homepage": "https://solmail.online",
+  "installation": {
+    "npm": "solmail-mcp",
+    "command": "npm install -g solmail-mcp"
+  },
+  "configuration": {
+    "command": "solmail-mcp",
+    "args": [],
+    "env": {
+      "SOLMAIL_API_URL": {
+        "description": "SolMail API endpoint",
+        "default": "https://solmail.online/api",
+        "required": false
+      },
+      "SOLANA_NETWORK": {
+        "description": "Solana network (devnet or mainnet-beta)",
+        "default": "devnet",
+        "required": true
+      },
+      "SOLANA_PRIVATE_KEY": {
+        "description": "Your agent's Solana wallet private key (base58 or JSON array format)",
+        "required": true,
+        "sensitive": true
+      },
+      "MERCHANT_WALLET": {
+        "description": "Merchant wallet address for payments",
+        "required": false
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "send_mail",
+      "description": "Send physical mail using Solana cryptocurrency"
+    },
+    {
+      "name": "get_mail_quote",
+      "description": "Get a price quote for sending mail"
+    },
+    {
+      "name": "get_wallet_balance",
+      "description": "Check agent's SOL wallet balance"
+    },
+    {
+      "name": "get_wallet_address",
+      "description": "Get agent's wallet address for funding"
+    }
+  ],
+  "author": {
+    "name": "SolMail",
+    "email": "hello@solmail.online",
+    "url": "https://solmail.online"
+  },
+  "license": "MIT",
+  "version": "1.0.0"
+}
