@@ -1,10 +1,18 @@
 // Stripe authentication and subscription management for SolMail MCP
 import Stripe from 'stripe';
 
-// Initialize Stripe (use env variable in production)
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
-});
+// Lazy-initialize Stripe so the server can start without credentials (free tier works without Stripe)
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+      throw new Error('STRIPE_SECRET_KEY not configured. Paid tiers require Stripe credentials.');
+    }
+    _stripe = new Stripe(key, { apiVersion: '2026-01-28.clover' });
+  }
+  return _stripe;
+}
 
 // Tier limits
 export interface TierLimits {
@@ -68,7 +76,7 @@ export async function validateApiKey(
     const customerId = parts[1];
 
     // Check Stripe subscription
-    const subscriptions = await stripe.subscriptions.list({
+    const subscriptions = await getStripe().subscriptions.list({
       customer: customerId,
       status: 'active',
       limit: 1,
@@ -109,7 +117,7 @@ export async function trackUsage(
 ): Promise<void> {
   try {
     // Store usage in Stripe metadata or use metering
-    await stripe.customers.update(customerId, {
+    await getStripe().customers.update(customerId, {
       metadata: {
         letters_sent_this_month: lettersSent.toString(),
         last_updated: new Date().toISOString(),
@@ -127,7 +135,7 @@ export async function trackUsage(
  */
 export async function getUsage(customerId: string): Promise<number> {
   try {
-    const customer = await stripe.customers.retrieve(customerId);
+    const customer = await getStripe().customers.retrieve(customerId);
     if (customer.deleted) {
       return 0;
     }
@@ -171,7 +179,7 @@ export async function createCheckoutSession(
   successUrl: string,
   cancelUrl: string
 ): Promise<string> {
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode: 'subscription',
     line_items: [
       {
@@ -200,7 +208,7 @@ export async function createPortalSession(
   customerId: string,
   returnUrl: string
 ): Promise<string> {
-  const session = await stripe.billingPortal.sessions.create({
+  const session = await getStripe().billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl,
   });
