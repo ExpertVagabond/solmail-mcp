@@ -74,7 +74,7 @@ function getMailPrice(country?: string): number {
 const server = new Server(
   {
     name: 'solmail-mcp',
-    version: '1.0.0',
+    version: '1.1.0',
   },
   {
     capabilities: {
@@ -299,7 +299,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 {
                   address: wallet.publicKey.toBase58(),
                   network: SOLANA_NETWORK,
-                  message: 'Send SOL to this address to fund your mail-sending operations',
+                  hostedApi: 'https://solmail-api.up.railway.app',
+                  message: 'Send SOL to this address to fund your mail-sending operations. Or use our hosted API with Stripe billing: https://solmail.online/pricing',
                 },
                 null,
                 2

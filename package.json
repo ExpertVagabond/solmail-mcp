@@ -1,6 +1,6 @@
 {
   "name": "solmail-mcp",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "MCP server for sending physical mail with Solana cryptocurrency - AI agents can send real letters autonomously",
   "type": "module",
   "main": "dist/index.js",
@@ -11,6 +11,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
+    "start:http": "node dist/http-server.js",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -47,6 +48,9 @@
     "dotenv": "^16.4.7",
     "express": "^5.2.1",
     "stripe": "^20.3.0"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
