@@ -1,0 +1,18 @@
+[package]
+name = "solmail-mcp"
+version = "0.1.0"
+edition = "2024"
+description = "MCP server for SolMail -- send physical mail via Solana payments. 4 tools: get_mail_quote, send_mail, get_wallet_balance, get_wallet_address"
+license = "MIT"
+authors = ["Purple Squirrel Media LLC"]
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+bs58 = "0.5"
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+rand = "0.8"
