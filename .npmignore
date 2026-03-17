@@ -20,6 +20,32 @@ TESTING.md
 CONTRIBUTING.md
 GITHUB_SETUP.md
 
+# Rust build artifacts
+target/
+Cargo.lock
+Cargo.toml
+
+# Docker / Deploy configs
+Dockerfile
+.dockerignore
+Procfile
+railway.json
+railway.toml
+render.yaml
+
+# Other dev files
+pricing-page.html
+test-stripe.js
+mcp-registry-submission.json
+package-http.json
+HTTP_DEPLOYMENT.md
+PUBLISHING.md
+QUICK_PUBLISH.md
+STRIPE_SETUP_GUIDE.md
+CHANGELOG.md
+server.json
+.github/
+
 # Git
 .git/
 .gitignore
