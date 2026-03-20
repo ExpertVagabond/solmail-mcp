@@ -30,38 +30,92 @@ const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || `https://api.${SOLANA_NETWO
 let connection: Connection;
 let wallet: Keypair | null = null;
 
-// Initialize Solana wallet if private key is provided
+// Initialize Solana wallet if private key is provided.
+// SECURITY NOTE: SOLANA_PRIVATE_KEY is read from env vars per MCP-standard
+// pattern (MCP servers receive config via environment). Never log the key value.
 function initializeWallet() {
   const privateKey = process.env.SOLANA_PRIVATE_KEY;
   if (privateKey) {
     try {
-      // Support both base58 and JSON array formats
-      const decoded = Uint8Array.from(
-        privateKey.includes('[')
-          ? JSON.parse(privateKey)
-          : bs58.decode(privateKey)
-      );
+      // Validate format before use: must be valid base58 or JSON array
+      const isJsonArray = privateKey.trimStart().startsWith('[');
+      let decoded: Uint8Array;
+
+      if (isJsonArray) {
+        const parsed = JSON.parse(privateKey);
+        if (!Array.isArray(parsed) || parsed.length !== 64) {
+          console.error(`Invalid private key: JSON array must have 64 elements, got ${Array.isArray(parsed) ? parsed.length : 'non-array'}`);
+          return;
+        }
+        decoded = Uint8Array.from(parsed);
+      } else {
+        // Validate base58 format
+        const bytes = bs58.decode(privateKey);
+        if (bytes.length !== 64) {
+          console.error(`Invalid private key: base58 decoded to ${bytes.length} bytes, expected 64`);
+          return;
+        }
+        decoded = Uint8Array.from(bytes);
+      }
+
       wallet = Keypair.fromSecretKey(decoded);
       console.error(`Wallet initialized: ${wallet.publicKey.toBase58()}`);
     } catch (error) {
-      console.error('Failed to initialize wallet:', error);
+      console.error('Failed to initialize wallet — check SOLANA_PRIVATE_KEY format:', error instanceof Error ? error.message : error);
     }
   }
 }
 
 // Helper to get SOL price in USD
+const FALLBACK_SOL_PRICE = 100;
 async function getSolPrice(): Promise<number> {
   try {
     const response = await fetch(
       'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd'
     );
     const data = await response.json() as { solana: { usd: number } };
-    return data.solana.usd;
+    const price = data?.solana?.usd;
+    if (typeof price !== 'number' || price <= 0) {
+      console.error(`WARNING: CoinGecko returned invalid SOL price (${price}), using fallback $${FALLBACK_SOL_PRICE}. Payment amounts may be inaccurate.`);
+      return FALLBACK_SOL_PRICE;
+    }
+    return price;
   } catch (error) {
-    console.error('Failed to fetch SOL price:', error);
-    // Fallback price
-    return 100;
+    // SECURITY: Fallback price can lead to incorrect payment amounts.
+    // Operators should monitor logs for this warning.
+    console.error(`WARNING: CoinGecko price fetch failed, using fallback SOL price of $${FALLBACK_SOL_PRICE}. Payment amounts may be inaccurate.`, error);
+    return FALLBACK_SOL_PRICE;
   }
+}
+
+// ISO 3166-1 alpha-2 country codes
+const ISO_3166_ALPHA2 = new Set([
+  'AD','AE','AF','AG','AI','AL','AM','AO','AQ','AR','AS','AT','AU','AW','AX','AZ',
+  'BA','BB','BD','BE','BF','BG','BH','BI','BJ','BL','BM','BN','BO','BQ','BR','BS',
+  'BT','BV','BW','BY','BZ','CA','CC','CD','CF','CG','CH','CI','CK','CL','CM','CN',
+  'CO','CR','CU','CV','CW','CX','CY','CZ','DE','DJ','DK','DM','DO','DZ','EC','EE',
+  'EG','EH','ER','ES','ET','FI','FJ','FK','FM','FO','FR','GA','GB','GD','GE','GF',
+  'GG','GH','GI','GL','GM','GN','GP','GQ','GR','GS','GT','GU','GW','GY','HK','HM',
+  'HN','HR','HT','HU','ID','IE','IL','IM','IN','IO','IQ','IR','IS','IT','JE','JM',
+  'JO','JP','KE','KG','KH','KI','KM','KN','KP','KR','KW','KY','KZ','LA','LB','LC',
+  'LI','LK','LR','LS','LT','LU','LV','LY','MA','MC','MD','ME','MF','MG','MH','MK',
+  'ML','MM','MN','MO','MP','MQ','MR','MS','MT','MU','MV','MW','MX','MY','MZ','NA',
+  'NC','NE','NF','NG','NI','NL','NO','NP','NR','NU','NZ','OM','PA','PE','PF','PG',
+  'PH','PK','PL','PM','PN','PR','PS','PT','PW','PY','QA','RE','RO','RS','RU','RW',
+  'SA','SB','SC','SD','SE','SG','SH','SI','SJ','SK','SL','SM','SN','SO','SR','SS',
+  'ST','SV','SX','SY','SZ','TC','TD','TF','TG','TH','TJ','TK','TL','TM','TN','TO',
+  'TR','TT','TV','TW','TZ','UA','UG','UM','US','UY','UZ','VA','VC','VE','VG','VI',
+  'VN','VU','WF','WS','YE','YT','ZA','ZM','ZW',
+]);
+
+/** Validate a country code against ISO 3166-1 alpha-2. Returns uppercase code or null. */
+function validateCountryCode(code: string | undefined): string | null {
+  if (!code) return 'US'; // default
+  const upper = code.trim().toUpperCase();
+  if (upper.length !== 2 || !ISO_3166_ALPHA2.has(upper)) {
+    return null;
+  }
+  return upper;
 }
 
 // Helper to determine mail price based on country
@@ -207,7 +261,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'get_mail_quote': {
-        const country = (args?.country as string) || 'US';
+        const rawCountry = (args?.country as string) || 'US';
+        const country = validateCountryCode(rawCountry);
+        if (!country) {
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ error: `Invalid country code: "${rawCountry}". Use ISO 3166-1 alpha-2 (e.g., US, GB, CA).` }) }],
+            isError: true,
+          };
+        }
         const color = (args?.color as boolean) || false;
 
         const basePrice = getMailPrice(country);
@@ -343,8 +404,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
 
-        // Calculate price
-        const country = recipient.country || 'US';
+        // Calculate price — validate country code
+        const validatedCountry = validateCountryCode(recipient.country);
+        if (!validatedCountry) {
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ error: `Invalid country code: "${recipient.country}". Use ISO 3166-1 alpha-2 (e.g., US, GB, CA).` }) }],
+            isError: true,
+          };
+        }
+        const country = validatedCountry;
         const color = mailOptions.color || false;
         const basePrice = getMailPrice(country);
         const totalPrice = basePrice + (color ? 0.50 : 0);
@@ -354,8 +422,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const solAmount = totalPrice / solPrice;
         const lamports = Math.ceil(solAmount * LAMPORTS_PER_SOL);
 
-        // Get merchant wallet from environment or use default
-        const merchantWallet = process.env.MERCHANT_WALLET || 'B5daxcMG9LgcXkZwuxBhHtuYxzG9J4ekgz1wUiMXw3xp';
+        // SECURITY: Merchant wallet must come from env — no hardcoded fallback
+        const merchantWallet = process.env.MERCHANT_WALLET;
+        if (!merchantWallet) {
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ error: 'MERCHANT_WALLET not configured. Cannot process payments.' }) }],
+            isError: true,
+          };
+        }
         const merchantPubkey = new PublicKey(merchantWallet);
 
         // Create payment transaction

@@ -30,8 +30,55 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
 const SOLMAIL_API_URL = process.env.SOLMAIL_API_URL || 'https://solmail.online/api';
-const MERCHANT_WALLET = process.env.MERCHANT_WALLET || 'B5daxcMG9LgcXkZwuxBhHtuYxzG9J4ekgz1wUiMXw3xp';
+const MERCHANT_WALLET = process.env.MERCHANT_WALLET;
+if (!MERCHANT_WALLET) {
+  console.error('FATAL: MERCHANT_WALLET env var is required. Exiting.');
+  process.exit(1);
+}
 const BASE_URL = process.env.SOLMAIL_BASE_URL || `http://localhost:${PORT}`;
+
+// --- Rate Limiting (in-memory, per IP) ---
+
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 50; // 50 requests per minute per IP
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimiter(req: Request, res: Response, next: NextFunction): void {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now >= entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    next();
+    return;
+  }
+
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) {
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+    res.set('Retry-After', String(retryAfter));
+    res.status(429).json({
+      error: 'Rate limit exceeded',
+      retryAfterSeconds: retryAfter,
+    });
+    return;
+  }
+
+  next();
+}
+
+// Periodic cleanup of stale rate-limit entries (every 5 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap) {
+    if (now >= entry.resetAt) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 5 * 60_000);
+
+app.use(rateLimiter);
 
 // Extend Request with auth info
 interface AuthenticatedRequest extends Request {
@@ -43,11 +90,34 @@ interface AuthenticatedRequest extends Request {
 // --- Middleware: API Key Authentication ---
 
 async function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
-  const apiKey = req.headers['x-api-key'] as string || 'free';
+  const rawKey = req.headers['x-api-key'];
 
-  const result = await validateApiKey(apiKey);
+  // Validate header format: must be a non-empty string
+  if (rawKey !== undefined && (typeof rawKey !== 'string' || rawKey.trim().length === 0)) {
+    res.status(400).json({
+      error: 'Malformed X-API-Key header. Provide a valid API key string or omit the header for free tier.',
+    });
+    return;
+  }
+
+  const apiKey = (typeof rawKey === 'string' && rawKey.trim().length > 0)
+    ? rawKey.trim()
+    : 'free';
+
+  let result;
+  try {
+    result = await validateApiKey(apiKey);
+  } catch (err) {
+    console.error('API key validation error:', err);
+    res.status(500).json({ error: 'Authentication service unavailable' });
+    return;
+  }
+
   if (!result) {
-    res.status(401).json({ error: 'Invalid API key', upgrade: 'https://solmail.online/pricing' });
+    res.status(401).json({
+      error: 'Invalid API key',
+      hint: 'Provide a valid key via the X-API-Key header. Get one at https://solmail.online/pricing',
+    });
     return;
   }
 
@@ -57,11 +127,23 @@ async function authMiddleware(req: AuthenticatedRequest, res: Response, next: Ne
   next();
 }
 
-// --- CORS ---
+// --- CORS (configurable origins, never wildcard in production) ---
+
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+  } else if (ALLOWED_ORIGINS.length === 0) {
+    // No origins configured — allow all (dev only). Log warning once at startup instead.
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') {
     res.sendStatus(204);
@@ -460,4 +542,7 @@ app.listen(PORT, () => {
   console.log(`Pricing: http://localhost:${PORT}/pricing`);
   console.log(`MCP info: http://localhost:${PORT}/mcp`);
   console.log(`Tiers: Free (5/mo) | Pro $14.99 (100/mo) | Enterprise $99.99 (unlimited)`);
+  if (ALLOWED_ORIGINS.length === 0) {
+    console.warn('WARNING: ALLOWED_ORIGINS not set — CORS allows all origins. Set ALLOWED_ORIGINS for production.');
+  }
 });
