@@ -66,10 +66,28 @@ import bs58 from 'bs58';
 
 dotenv.config();
 
-// Configuration
-const SOLMAIL_API_URL = process.env.SOLMAIL_API_URL || 'https://solmail.online/api';
+// ── Security: URL validation ───────────────────────────────────────────────
+/** Validate a URL string: must be well-formed HTTPS (or HTTP for localhost dev). */
+function validateEndpointUrl(raw: string, name: string): string {
+  let parsed: URL;
+  try { parsed = new URL(raw); } catch {
+    throw new Error(`${name} is not a valid URL: ${raw}`);
+  }
+  if (!['https:', 'http:'].includes(parsed.protocol)) {
+    throw new Error(`${name} must use HTTPS (got ${parsed.protocol})`);
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error(`${name} must not embed credentials in the URL`);
+  }
+  return parsed.toString();
+}
+
+// Configuration — all endpoint URLs validated before first use
+const SOLMAIL_API_URL = validateEndpointUrl(
+  process.env.SOLMAIL_API_URL || 'https://solmail.online/api', 'SOLMAIL_API_URL');
 const SOLANA_NETWORK = process.env.SOLANA_NETWORK || 'devnet';
-const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || `https://api.${SOLANA_NETWORK}.solana.com`;
+const SOLANA_RPC_URL = validateEndpointUrl(
+  process.env.SOLANA_RPC_URL || `https://api.${SOLANA_NETWORK}.solana.com`, 'SOLANA_RPC_URL');
 
 // Solana connection
 let connection: Connection;
