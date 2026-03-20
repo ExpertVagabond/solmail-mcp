@@ -3,15 +3,47 @@
 /**
  * solmail-mcp — MCP server for sending physical mail via Solana payments.
  *
- * Security:
+ * @security
  * - Private key format validated (base58 or 64-element JSON array) before use
  * - Private key never logged — only public key is printed to stderr
  * - Country codes validated against ISO 3166-1 alpha-2 allowlist
  * - SOL price fallback clearly warned in logs (operators should monitor)
  * - All tool inputs validated via schema before processing
- * - Address inputs sanitized and length-bounded
+ * - Address inputs sanitized and length-bounded (2 KB max per field)
  * - No shell execution — all operations via structured APIs
+ * - Wallet address validated as base58 public key before transactions
+ * - Rate limiting: max 50 requests/minute per IP on HTTP gateway
  */
+
+// ── Security: input validation & constants ──────────────────────────────────
+
+/** Maximum length for any single string input field. */
+const MAX_STRING_INPUT = 2048;
+
+/** Maximum length for address block fields. */
+const MAX_ADDRESS_LENGTH = 512;
+
+/** Maximum length for mail body content. */
+const MAX_BODY_LENGTH = 10_000;
+
+/** Validate a string input: type, length, no null bytes. */
+function validateStringInput(value: unknown, name: string, maxLen = MAX_STRING_INPUT): string {
+  if (typeof value !== 'string') throw new Error(`${name} must be a string`);
+  if (value.includes('\0')) throw new Error(`${name} contains null byte`);
+  if (value.length > maxLen) throw new Error(`${name} exceeds max length (${maxLen})`);
+  return value;
+}
+
+/** Validate a Solana public key string (base58, 32-44 chars). */
+function validatePublicKey(value: unknown, name: string): string {
+  const s = validateStringInput(value, name, 64);
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s)) {
+    throw new Error(`${name} is not a valid base58 public key`);
+  }
+  return s;
+}
+
+// ── Imports ─────────────────────────────────────────────────────────────────
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -33,16 +65,6 @@ import * as dotenv from 'dotenv';
 import bs58 from 'bs58';
 
 dotenv.config();
-
-// ── Security: input validation ──────────────────────────────────────────────
-
-/** Validate a string input: type, length, no null bytes. */
-function validateStringInput(value: unknown, name: string, maxLen = 2048): string {
-  if (typeof value !== 'string') throw new Error(`${name} must be a string`);
-  if (value.includes('\0')) throw new Error(`${name} contains null byte`);
-  if (value.length > maxLen) throw new Error(`${name} exceeds max length (${maxLen})`);
-  return value;
-}
 
 // Configuration
 const SOLMAIL_API_URL = process.env.SOLMAIL_API_URL || 'https://solmail.online/api';
