@@ -19,9 +19,8 @@
 
 import {
   sanitizeError,
-  validateInputSize,
   PsmMcpError,
-} from "@psm/mcp-core-ts";
+} from "./psm-errors.js";
 
 /** Maximum length for any single string input field. */
 const MAX_STRING_INPUT = 2048;
