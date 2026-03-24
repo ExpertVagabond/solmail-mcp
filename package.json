@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
+    "@psm/mcp-core-ts": "file:../psm-mcp-core-ts",
     "@solana/web3.js": "^1.91.0",
     "@types/express": "^5.0.6",
     "bs58": "^6.0.0",
