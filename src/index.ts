@@ -15,7 +15,13 @@
  * - Rate limiting: max 50 requests/minute per IP on HTTP gateway
  */
 
-// ── Security: input validation & constants ──────────────────────────────────
+// ── Security: input validation & constants (using @psm/mcp-core-ts) ─────────
+
+import {
+  sanitizeError,
+  validateInputSize,
+  PsmMcpError,
+} from "@psm/mcp-core-ts";
 
 /** Maximum length for any single string input field. */
 const MAX_STRING_INPUT = 2048;
@@ -28,9 +34,9 @@ const MAX_BODY_LENGTH = 10_000;
 
 /** Validate a string input: type, length, no null bytes. */
 function validateStringInput(value: unknown, name: string, maxLen = MAX_STRING_INPUT): string {
-  if (typeof value !== 'string') throw new Error(`${name} must be a string`);
-  if (value.includes('\0')) throw new Error(`${name} contains null byte`);
-  if (value.length > maxLen) throw new Error(`${name} exceeds max length (${maxLen})`);
+  if (typeof value !== 'string') throw PsmMcpError.inputValidation(`${name} must be a string`);
+  if (value.includes('\0')) throw PsmMcpError.inputValidation(`${name} contains null byte`);
+  if (value.length > maxLen) throw PsmMcpError.inputValidation(`${name} exceeds max length (${maxLen})`);
   return value;
 }
 
@@ -38,7 +44,7 @@ function validateStringInput(value: unknown, name: string, maxLen = MAX_STRING_I
 function validatePublicKey(value: unknown, name: string): string {
   const s = validateStringInput(value, name, 64);
   if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s)) {
-    throw new Error(`${name} is not a valid base58 public key`);
+    throw PsmMcpError.inputValidation(`${name} is not a valid base58 public key`);
   }
   return s;
 }
@@ -595,8 +601,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         {
           type: 'text',
           text: JSON.stringify({
-            error: error instanceof Error ? error.message : 'Unknown error',
-            details: error instanceof Error ? error.stack : undefined,
+            error: sanitizeError(error instanceof Error ? error.message : 'Unknown error'),
           }),
         },
       ],
