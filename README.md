@@ -30,6 +30,10 @@ Add to your MCP config:
 }
 ```
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/expertvagabond-solmail-mcp).
+
 ## Features
 
 - **Physical Mail** -- Letters printed and mailed to 200+ countries via Lob.com
