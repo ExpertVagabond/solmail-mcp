@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "MCP server for SolMail -- send physical mail via Solana payments. 4 tools: get_mail_quote, send_mail, get_wallet_balance, get_wallet_address"
 license = "MIT"
-authors = ["Purple Squirrel Media LLC"]
+authors = ["Matthew Karsten <matthewkarstenconnects@gmail.com>"]
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
